@@ -1,0 +1,99 @@
+# Example Harness Configuration
+# Copy to config/local.yaml and customize
+
+harness:
+  name: "custom-se-harness"
+  version: "1.0.0"
+  description: "Configurable harness for software engineering tasks"
+
+modules:
+  # Context Management: How conversation/history context is managed
+  context_manager:
+    type: "sliding_window"  # Options: sliding_window, hierarchical, relevance_weighted, fixed
+    params:
+      window_size: 8192
+      strategy: "relevance_weighted"  # Options: fifo, relevance_weighted, importance_sampling
+      preserve_system_prompt: true
+      preserve_recent: 4
+
+  # State Tracking: How execution state is persisted and queried
+  state_tracker:
+    type: "sqlite"  # Options: sqlite, postgres, memory, redis
+    params:
+      path: "./.harness_state.db"
+      enable_wal: true
+      checkpoint_interval: 100
+
+  # Tool Coordination: How tool calls are executed and managed
+  tool_coordinator:
+    type: "async_subprocess"  # Options: async_subprocess, sync_subprocess, docker, kubernetes, local
+    params:
+      timeout: 300
+      max_parallel: 4
+      working_dir: "."
+      env_passthrough: true
+      capture_output: true
+
+  # Parser Registry: How model outputs are parsed into structured actions
+  parser:
+    type: "structured_output"  # Options: structured_output, regex, function_calling, yaml_block, json_block
+    params:
+      schema: "schemas/default_action_schema.json"
+      strict: true
+      fallback: "regex"
+
+  # Evaluation Engine: How task success is determined
+  evaluator:
+    type: "test_based"  # Options: test_based, metric_based, llm_judge, hybrid
+    params:
+      test_command: "pytest -xvs --tb=short"
+      coverage_threshold: 0.8
+      metrics:
+        - "pass_rate"
+        - "coverage"
+        - "runtime"
+      llm_judge_model: "gpt-4o"  # For hybrid evaluation
+
+  # Runtime Adapter: Interface to execution environment
+  runtime_adapter:
+    type: "local"  # Options: local, docker, kubernetes, cloud
+    params:
+      image: "python:3.11-slim"
+      volumes:
+        - "./:/workspace"
+      network: "host"
+
+# Plugin System: Custom extensions
+plugins:
+  enabled: []
+  paths:
+    - "./plugins"
+    - "~/.harness/plugins"
+
+# Logging & Observability
+observability:
+  tracing:
+    enabled: true
+    exporter: "console"  # Options: console, jaeger, zipkin, otlp
+    sampling_rate: 1.0
+  logging:
+    level: "INFO"
+    format: "json"
+    output: "stdout"
+  metrics:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+
+# Benchmark Integration
+benchmarks:
+  swe_bench:
+    enabled: false
+    dataset: "princeton-nlp/SWE-bench_Verified"
+    split: "test"
+  terminal_bench:
+    enabled: false
+    version: "4.0"
+  custom:
+    enabled: false
+    path: "./benchmarks/custom"
