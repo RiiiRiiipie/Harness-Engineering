@@ -6,6 +6,7 @@ import pytest
 import tempfile
 import os
 from pathlib import Path
+from unittest.mock import Mock
 
 from harness_engineering.core.config import HarnessConfig, ModuleConfig
 from harness_engineering.core.harness import Harness
@@ -128,6 +129,23 @@ class TestHarness:
         assert "custom" in health["modules"]
         
         harness.shutdown()
+
+    @pytest.mark.parametrize(
+        "module_type",
+        [ModuleType.RUNTIME_ADAPTER, ModuleType.EVALUATOR],
+    )
+    def test_run_fails_when_runtime_or_evaluator_fails(self, module_type):
+        harness = Harness(HarnessConfig(name="test-harness", version="1.0.0"))
+        harness._initialized = True
+        failing_module = Mock()
+        failing_module.execute.return_value = ModuleResult(success=False, error="module failed")
+        harness.modules[module_type] = failing_module
+
+        result = harness.run(task="test task", task_id="test-id")
+
+        assert not result.success
+        assert result.error == "module failed"
+        assert result.task_id == "test-id"
 
 
 class TestModuleBase:

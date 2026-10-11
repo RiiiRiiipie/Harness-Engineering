@@ -204,6 +204,10 @@ class Harness:
             if runtime:
                 rt_result = runtime.execute(task=task, task_id=task_id, **kwargs)
                 trace.append({"step": "runtime_init", "result": rt_result.__dict__})
+                if not rt_result.success:
+                    return HarnessResult(
+                        success=False, task_id=task_id, error=rt_result.error, trace=trace
+                    )
             
             # 3. Main execution loop (simplified)
             # In practice, this would coordinate context, tools, parsing, state
@@ -220,6 +224,10 @@ class Harness:
             if evaluator:
                 eval_result = evaluator.execute(task=task, output=output, **kwargs)
                 trace.append({"step": "evaluation", "result": eval_result.__dict__})
+                if not eval_result.success:
+                    return HarnessResult(
+                        success=False, task_id=task_id, error=eval_result.error, trace=trace
+                    )
                 metrics = eval_result.data or {}
             
             return HarnessResult(
